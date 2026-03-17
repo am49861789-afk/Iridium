@@ -60,12 +60,15 @@ jobs:
           # 3. 拷贝 DEBIAN 控制目录
           cp -r Workflow/DEBIAN layout/
           
-          # 4. 执行项目的预处理脚本（解压 fouldecrypt 等依赖并注入到 app 中）
+          # 4. 替换 control 文件中的 @@VERSION@@ 占位符为真实版本号 (如 1.0.1)
+          sed -i '' "s/@@VERSION@@/1.0.${{ github.run_number }}/g" layout/DEBIAN/control
+          
+          # 5. 执行项目的预处理脚本（解压 fouldecrypt 等依赖并注入到 app 中）
           cd Workflow
           chmod +x *.sh
           ./prepare.fouldecrypt.sh || true
           
-          # 如果 prepare.app.sh 需要 app 路径作为参数，传入相对路径
+          # 传入相对路径给 prepare.app.sh 进行处理
           ./prepare.app.sh "../layout/Applications/$APP_NAME" || true
           cd ..
 
@@ -84,7 +87,7 @@ jobs:
             echo "Signing with ldid..."
             ldid -SWorkflow/Entitlements.plist "$APP_DIR/$APP_EXEC_NAME"
             
-            # 遍历寻找 .dylib 或其他辅助二进制文件并签名（按需）
+            # 遍历寻找 .dylib 或其他辅助二进制文件并签名
             find "$APP_DIR" -type f -name "*.dylib" -exec ldid -S {} \;
           fi
 
