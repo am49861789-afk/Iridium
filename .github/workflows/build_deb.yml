@@ -70,14 +70,14 @@ jobs:
           cd Workflow
           unzip -o fouldecrypt.zip
           
-          # 【修复点 1】：把所有的底层引擎和动态库（libkernrw.0.dylib 等）一并拷贝过去
+          # 把所有的底层引擎和动态库（libkernrw.0.dylib 等）一并拷贝过去
           cp fouldecrypt.tfp0 fouldecrypt.krw fouldecrypt.kernrw *.dylib "../$APP_FULL_PATH/" || true
           cd ..
           
           # 4. 手动寻找编译好的 AuxiliaryAgent 并注入到 app 中
           echo "Injecting AuxiliaryAgent..."
           
-          # 【修复点 2】：重新使用 find 命令，但加入 '! -path "*.dSYM*"' 规则过滤掉调试符号包
+          # 使用 find 命令，并加入 '! -path "*.dSYM*"' 规则过滤掉调试符号包
           AGENT_BIN=$(find agent_build_output/Build/Products -type f -name "AuxiliaryAgent" ! -path "*.dSYM*" | head -n 1)
           
           if [ -n "$AGENT_BIN" ] && [ -f "$AGENT_BIN" ]; then
@@ -85,7 +85,6 @@ jobs:
             echo "Successfully injected AuxiliaryAgent from $AGENT_BIN"
           else
             echo "Error: AuxiliaryAgent not found!"
-            # 打印该目录结构以方便出错时进行调试排查
             find agent_build_output/Build/Products
             exit 1
           fi
@@ -114,8 +113,7 @@ jobs:
             fi
           fi
           
-          # 对底层脱壳引擎和动态库进行签名
-          find "$APP_DIR" -type f -name "fouldecrypt.*" -exec ldid -S {} \;
+          # 【终极修复点】：这里只对 dylib 进行空签名，绝对不去动 fouldecrypt.* 让其保留自带特权！
           find "$APP_DIR" -type f -name "*.dylib" -exec ldid -S {} \;
 
       - name: Package to DEB
