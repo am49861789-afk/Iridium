@@ -25,12 +25,10 @@ jobs:
 
       - name: Resolve Swift Packages
         run: |
-          # 提前让工作区解析好所有的包依赖
           xcodebuild -resolvePackageDependencies -workspace App.xcworkspace -scheme iridium
 
       - name: Build AuxiliaryAgent
         run: |
-          # 【修复点】：改为通过 workspace 编译，这样才能正确读取到 Foundation/AppListProto 依赖
           xcodebuild clean build \
             -workspace App.xcworkspace \
             -scheme AuxiliaryAgent \
@@ -76,12 +74,15 @@ jobs:
           
           # 4. 手动寻找编译好的 AuxiliaryAgent 并注入到 app 中
           echo "Injecting AuxiliaryAgent..."
-          AGENT_BIN=$(find agent_build_output/Build/Products -name "AuxiliaryAgent" -type f | head -n 1)
-          if [ -n "$AGENT_BIN" ]; then
+          
+          # 【核心修复点】：直接指定准确的相对路径，彻底避开 .dSYM 调试符号文件夹
+          AGENT_BIN="agent_build_output/Build/Products/Release-iphoneos/AuxiliaryAgent"
+          
+          if [ -f "$AGENT_BIN" ]; then
             cp "$AGENT_BIN" "$APP_FULL_PATH/"
             echo "Successfully injected AuxiliaryAgent."
           else
-            echo "Error: AuxiliaryAgent not found!"
+            echo "Error: AuxiliaryAgent not found at expected path: $AGENT_BIN"
             exit 1
           fi
 
