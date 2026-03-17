@@ -66,23 +66,27 @@ jobs:
           sed -i '' "s/@@VERSION@@/1.0.${{ github.run_number }}/g" layout/DEBIAN/control
           
           # 3. 手动解压 fouldecrypt.zip 并强制注入到 app 中
-          echo "Injecting fouldecrypt engines..."
+          echo "Injecting fouldecrypt engines and dylibs..."
           cd Workflow
           unzip -o fouldecrypt.zip
-          cp fouldecrypt.tfp0 fouldecrypt.krw fouldecrypt.kernrw "../$APP_FULL_PATH/"
+          
+          # 【修复点 1】：把所有的底层引擎和动态库（libkernrw.0.dylib 等）一并拷贝过去
+          cp fouldecrypt.tfp0 fouldecrypt.krw fouldecrypt.kernrw *.dylib "../$APP_FULL_PATH/" || true
           cd ..
           
           # 4. 手动寻找编译好的 AuxiliaryAgent 并注入到 app 中
           echo "Injecting AuxiliaryAgent..."
           
-          # 【核心修复点】：直接指定准确的相对路径，彻底避开 .dSYM 调试符号文件夹
-          AGENT_BIN="agent_build_output/Build/Products/Release-iphoneos/AuxiliaryAgent"
+          # 【修复点 2】：重新使用 find 命令，但加入 '! -path "*.dSYM*"' 规则过滤掉调试符号包
+          AGENT_BIN=$(find agent_build_output/Build/Products -type f -name "AuxiliaryAgent" ! -path "*.dSYM*" | head -n 1)
           
-          if [ -f "$AGENT_BIN" ]; then
+          if [ -n "$AGENT_BIN" ] && [ -f "$AGENT_BIN" ]; then
             cp "$AGENT_BIN" "$APP_FULL_PATH/"
-            echo "Successfully injected AuxiliaryAgent."
+            echo "Successfully injected AuxiliaryAgent from $AGENT_BIN"
           else
-            echo "Error: AuxiliaryAgent not found at expected path: $AGENT_BIN"
+            echo "Error: AuxiliaryAgent not found!"
+            # 打印该目录结构以方便出错时进行调试排查
+            find agent_build_output/Build/Products
             exit 1
           fi
 
