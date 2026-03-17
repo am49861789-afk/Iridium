@@ -232,18 +232,16 @@ class Agent {
                     guard let data = try? Data(contentsOf: currentObjectFullPath) else {
                         return
                     }
- let magic = data.magic
-if magic == MH_MAGIC_64 || magic == FAT_MAGIC_64 {
-    output("[*] \(objectPath)\n")
-    binaries.append(
-        (
-            originalBundleLocation.appendingPathComponent(objectPath),
-            currentObjectFullPath
-        )
-    )
-}
-
-
+                    let magic = data.magic
+                    if magic == MH_MAGIC_64 || magic == FAT_MAGIC_64 {
+                        output("[*] \(objectPath)\n")
+                        binaries.append(
+                            (
+                                originalBundleLocation.appendingPathComponent(objectPath),
+                                currentObjectFullPath
+                            )
+                        )
+                    }
                 }
             } while true
         } while false
