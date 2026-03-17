@@ -232,8 +232,14 @@ class Agent {
                     guard let data = try? Data(contentsOf: currentObjectFullPath) else {
                         return
                     }
-                    let magic = data.magic
-                    if magic == MH_MAGIC_64 || magic == FAT_MAGIC_64 {
+                                  let magic = data.magic
+                    
+                    // 补齐所有 Mach-O (32位/64位) 和 Fat Binary 的大端和小端序 Magic Number
+                    if magic == MH_MAGIC_64 || magic == MH_CIGAM_64 ||
+                       magic == FAT_MAGIC_64 || magic == FAT_CIGAM_64 ||
+                       magic == MH_MAGIC || magic == MH_CIGAM ||
+                       magic == FAT_MAGIC || magic == FAT_CIGAM {
+                        
                         output("[*] \(objectPath)\n")
                         binaries.append(
                             (
@@ -242,6 +248,7 @@ class Agent {
                             )
                         )
                     }
+
                 }
             } while true
         } while false
